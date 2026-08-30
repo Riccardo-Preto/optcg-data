@@ -49,6 +49,16 @@ SET_ENDPOINTS = {
     "starter_deck": f"{BASE_URL}/allDecks/", # elenco degli starter deck
 }
 
+# L'API a volte etichetta ancora qualche carta col vecchio set_id
+# giapponese invece di quello della release occidentale (es. una carta
+# di EB04 che in occidente è uscita dentro OP15EB04, non da sola; o
+# delle promo da torneo etichettate "OP14" invece di "OP14EB04").
+# Qui correggiamo questi casi noti alla fonte.
+SET_ID_OVERRIDES = {
+    "EB04": "OP15EB04",  # Monkey.D.Luffy (EB04-061, serial number)
+    "OP14": "OP14EB04",  # 4 promo da torneo (Perona, Boa Hancock, Mihawk, Crocodile)
+}
+
 
 def fetch_json(url: str):
     """Scarica una pagina e la interpreta come JSON, con un messaggio
@@ -75,12 +85,14 @@ def normalize_card(raw: dict) -> dict:
 
     card_set_id = raw.get("card_set_id")
     card_image_id = raw.get("card_image_id") or card_set_id
+    set_id = normalize_set_id(raw.get("set_id"))
+    set_id = SET_ID_OVERRIDES.get(set_id, set_id)
 
     return {
         # id univoco della carta/variante — è quello che diventerà la
         # PrimaryKey nella tua tabella cards, esattamente come oggi.
         "id": card_image_id,
-        "set_id": normalize_set_id(raw.get("set_id")),
+        "set_id": set_id,
         "nome": raw.get("card_name"),
         "card_color": raw.get("card_color"),
         "card_type": raw.get("card_type"),
