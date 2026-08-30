@@ -167,6 +167,18 @@ def main():
         print(f"  ok: {len(raw_sets)} set da '{kind}'")
         time.sleep(1)
 
+    # Alcune carte (promo con set_id 'P', carte DON!! con set_id 'DON', ecc.)
+    # appartengono a un "set_id" che non compare in nessuno dei due elenchi
+    # sopra. La tua app ha una foreign key cards -> sets: se un set_id non
+    # esiste nella tabella sets, l'inserimento della carta viene rifiutato.
+    # Qui creiamo un set "segnaposto" per ognuno di questi id orfani, così
+    # non si rompe mai nulla anche quando Bandai introduce categorie nuove.
+    orphan_set_ids = {c["set_id"] for c in all_cards.values() if c["set_id"]} - set(all_sets.keys())
+    for orphan_id in orphan_set_ids:
+        all_sets[orphan_id] = {"id": orphan_id, "api_id": None, "nome": orphan_id}
+    if orphan_set_ids:
+        print(f"  creati {len(orphan_set_ids)} set segnaposto per id orfani: {sorted(orphan_set_ids)}")
+
     snapshot = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "card_count": len(all_cards),
